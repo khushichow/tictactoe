@@ -1,0 +1,113 @@
+#!/bin/bash
+
+
+if [[ $1 != "X" && $1 != "O" ]]; then
+    echo "Arg 1: must be X or O" >&2
+    exit 1
+fi
+
+if ! [ -r $2 ]; then
+    echo "Arg 2: Must be a readable file" >&2
+    exit 2
+fi
+
+place=($(cat "$2"))
+
+if [ ${#place[@]} != 9 ]; then
+    echo "Arg 2: File must contain integers 1-9" >&2
+    exit 3
+fi
+
+#initalize grid
+grid=()
+
+#print final grid with replaces spaces
+print_grid() {
+    for ((i = 1; i <= 9; i++)); do
+        if [[ -z ${grid[i]} ]]; then
+            grid[i]="-"
+        fi
+    done
+
+    echo " ${grid[1]} | ${grid[2]} | ${grid[3]} "
+    echo " --------- "
+    echo " ${grid[4]} | ${grid[5]} | ${grid[6]} "
+    echo " --------- "
+    echo " ${grid[7]} | ${grid[8]} | ${grid[9]} "
+}
+
+# checks of x or o has won
+check_winner() {
+    local player=$1
+    if [[ ${grid[1]} == $player && ${grid[2]} == $player && ${grid[3]} == $player ]] ||	 
+	    [[ ${grid[4]} == $player && ${grid[5]} == $player && ${grid[6]} == $player ]] ||     
+	    [[ ${grid[7]} == $player && ${grid[8]} == $player && ${grid[9]} == $player ]] ||
+	    [[ ${grid[1]} == $player && ${grid[5]} == $player && ${grid[9]} == $player ]] ||
+	    [[ ${grid[3]} == $player && ${grid[5]} == $player && ${grid[7]} == $player ]] ||
+	    [[ ${grid[1]} == $player && ${grid[4]} == $player && ${grid[7]} == $player ]] ||
+	    [[ ${grid[2]} == $player && ${grid[5]} == $player && ${grid[8]} == $player ]] ||
+	    [[ ${grid[3]} == $player && ${grid[6]} == $player && ${grid[9]} == $player ]]; then
+        return 0
+    fi
+    return 1
+}
+
+
+#initializes player symbols
+current_player=$1
+
+if [[ "$current_player" == "X" ]]; then
+	second_player="O"
+else
+        second_player="X"
+fi
+
+#starts games before posibility of win
+grid[${place[0]}]="$current_player"
+grid[${place[1]}]="$second_player"
+grid[${place[2]}]="$current_player"
+grid[${place[3]}]="$second_player"
+grid[${place[4]}]="$current_player"
+#checks for wins each round
+if check_winner "$current_player"; then
+	print_grid
+    echo "$current_player is the winner! "
+    exit 4
+elif check_winner "$second_player"; then
+	print_grid
+    echo "$second_player is the winner! "
+    exit 5
+else
+	grid[${place[5]}]="$second_player"
+	if check_winner "$second_player"; then
+		print_grid
+		echo "$second_player is the winner! "
+		exit 5
+	else
+		grid[${place[6]}]="$current_player"
+		if check_winner "$current_player"; then
+			print_grid
+			echo "$current_player is the winner!"
+			exit 4
+		else
+			grid[${place[7]}]="$second_player"
+			if check_winner "$second_player"; then
+				print_grid
+				echo "$second_player is the winner!"
+				exit 5
+			else
+				grid[${place[8]}]="$current_player"
+				if check_winner "$current_player"; then
+					print_grid
+					echo "$current_player is the winner!"
+					exit 4
+				else    #if none win after all the moves, its a tie
+					print_grid
+					echo "The game ends in a tie."
+					exit 6
+				fi
+			fi
+		fi
+	fi
+fi
+
